@@ -27,7 +27,12 @@ rf24 module containing the base class RF24
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
-from adafruit_bus_device.spi_device import SPIDevice
+MICROPY = False
+try:
+    from adafruit_bus_device.spi_device import SPIDevice
+except ImportError:
+    MICROPY = True
+    from .uspi_device import SPIDevice, Pin
 
 # nRF24L01 registers
 # pylint: disable=bad-whitespace
@@ -154,7 +159,10 @@ class RF24:
         # store the ce pin
         self.ce_pin = ce
         # reset ce.value & disable the chip comms
-        self.ce_pin.switch_to_output(value=False)
+        if MICROPY:
+            self.ce_pin.init(mode=Pin.OUT, value=False)
+        else:
+            self.ce_pin.switch_to_output(value=False)
         # if radio is powered up and CE is LOW: standby-I mode
         # if radio is powered up and CE is HIGH: standby-II mode
 
@@ -251,7 +259,11 @@ class RF24:
         buf = bytearray(2)  # 2 = 1 status byte + 1 byte of returned content
         with self._spi as spi:
             time.sleep(0.005)  # time for CSN to settle
-            spi.readinto(buf, write_value=reg)
+            if MICROPY:
+                spi.readinto(buf, write=reg)
+                spi.readinto(buf[1:])
+            else:
+                spi.readinto(buf, write_value=reg)
         self._status = buf[0]  # save status byte
         return buf[1]  # drop status byte and return the rest
 
@@ -260,7 +272,11 @@ class RF24:
         buf = bytearray(buf_len + 1)
         with self._spi as spi:
             time.sleep(0.005)  # time for CSN to settle
-            spi.readinto(buf, write_value=reg)
+            if MICROPY:
+                spi.readinto(buf, write=reg)
+                spi.readinto(buf[1:])
+            else:
+                spi.readinto(buf, write_value=reg)
         self._status = buf[0]  # save status byte
         return buf[1:]  # drop status byte and return the rest
 

@@ -66,4 +66,4 @@ class SPIDevice:
         if self.chip_select:
             self.chip_select.value = True
         self.spi.deinit()
-        return None
+        return False

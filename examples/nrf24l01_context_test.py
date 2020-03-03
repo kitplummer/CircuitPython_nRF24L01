@@ -3,17 +3,29 @@ Simple example of library usage in context.
 This will not transmit anything, but rather
 display settings after changing contexts ( & thus configurations)
 """
-import board
-import digitalio as dio
-from circuitpython_nrf24l01 import RF24
+MICROPY = False
+try:
+    import board
+    import digitalio as dio
+    from circuitpython_nrf24l01 import RF24
+except ImportError:
+    MICROPY = True
+    from machine import Pin, SPI
+    import udigitalio as dio
+    from rf24 import RF24
 
-# change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D4)
-csn = dio.DigitalInOut(board.D5)
+if MICROPY:
+    ce = dio.DigitalInOut(Pin(9))
+    csn = dio.DigitalInOut(Pin(11))
+    spi = SPI(mosi=Pin(8), miso=Pin(7), sck=Pin(6))
+else:
+    # change these (digital output) pins accordingly
+    ce = dio.DigitalInOut(board.D4)
+    csn = dio.DigitalInOut(board.D5)
 
-# using board.SPI() automatically selects the MCU's
-# available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI()  # init spi bus object
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    spi = board.SPI()  # init spi bus object
 
 # initialize the nRF24L01 objects on the spi bus object
 nrf = RF24(spi, csn, ce, ack=True)
